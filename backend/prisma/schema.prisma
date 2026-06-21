@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -12,15 +10,65 @@ datasource db {
   provider = "postgresql"
 }
 
+
+
+
 enum UserRole {
   USER
   ADMIN
 }
 
-model User{
-  id Int @id @default(autoincrement())
-  email String @unique
-  password String
-  role UserRole @default(USER)
-  createdAt DateTime @default(now())
+enum QuizStatus {
+  WAITING
+  ACTIVE
+  FINISHED
+}
+
+
+
+model User {
+  id           Int          @id @default(autoincrement())
+  username     String       @unique @db.VarChar(50)
+  email        String       @unique @db.VarChar(100)
+  password     String       // hashed via bcryptjs
+  role         UserRole     @default(USER)
+  createdAt    DateTime     @default(now())
+
+  answers      UserAnswer[]
+}
+
+model QuizQuestion {
+  id            Int          @id @default(autoincrement())
+  questionText  String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctOption String       @db.VarChar(1)  // "A" | "B" | "C" | "D"
+  orderNumber   Int          @unique
+
+  answers       UserAnswer[]
+}
+
+model QuizSession {
+  id          Int        @id @default(autoincrement())
+  status      QuizStatus @default(WAITING)
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime   @default(now())
+}
+
+model UserAnswer {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  questionId     Int
+  selectedOption String       @db.VarChar(1)  // "A" | "B" | "C" | "D"
+  isCorrect      Boolean
+  score          Int          @default(0)
+  answeredAt     DateTime     @default(now())
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question       QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId]) // one answer per user per question
 }
