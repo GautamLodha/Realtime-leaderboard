@@ -1,2 +1,3 @@
-// Single source of truth for the backend host used by HTTP proxying and Socket.IO.
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:4000'
+// Single source of truth for all HTTP and Socket.IO connections.
+// Vite exposes only environment variables that begin with VITE_.
+export const BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000').replace(/\/$/, '')

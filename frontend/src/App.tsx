@@ -6,8 +6,7 @@ import QuizManager from './components/QuizManager'
 import { BACKEND_URL } from './config'
 import './App.css'
 
-// During local development, Vite proxies these same-origin requests to the API.
-const API_URL = import.meta.env.VITE_API_URL ?? ''
+const API_URL = BACKEND_URL
 
 type Quiz = {
   id: number; title: string; roomId: string; duration: number; status: string; startTime: string | null

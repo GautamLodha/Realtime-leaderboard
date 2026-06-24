@@ -3,6 +3,7 @@ import { socket } from '../socket';
 import type { QuizRoomProps, QuizStatus, Question } from '../types/quiz';
 import QuizGameplay from './QuizGameplay';
 import LiveLeaderboard from './LiveLeaderboard';
+import { BACKEND_URL } from '../config';
 
 export default function QuizRoom({ sessionId, token, startTime }: QuizRoomProps) {
   const [quizStatus, setQuizStatus] = useState<QuizStatus>('WAITING');
@@ -40,7 +41,7 @@ export default function QuizRoom({ sessionId, token, startTime }: QuizRoomProps)
 
   const fetchQuestions = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/quizzes/${sessionId}/questions`, {
+      const res = await fetch(`${BACKEND_URL}/api/quizzes/${sessionId}/questions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data: Question[] = await res.json();

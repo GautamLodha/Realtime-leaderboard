@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BACKEND_URL } from '../config';
 
 interface AuthScreenProps {
   onAuthSuccess: (token: string, username: string) => void;
@@ -19,7 +20,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     const payload = isLogin ? { email, password } : { username, email, password };
 
     try {
-      const res = await fetch(`http://localhost:5000${endpoint}`, {
+      const res = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

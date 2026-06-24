@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Question } from '../types/quiz';
+import { BACKEND_URL } from '../config';
 
 interface QuizGameplayProps {
   questions: Question[];
@@ -29,7 +30,7 @@ export default function QuizGameplay({ questions, sessionId, token }: QuizGamepl
     setSubmitting(true);
 
     try {
-      await fetch(`http://localhost:5000/api/quizzes/${sessionId}/submit`, {
+      await fetch(`${BACKEND_URL}/api/quizzes/${sessionId}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
