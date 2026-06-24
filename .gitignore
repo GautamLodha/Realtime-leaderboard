@@ -1,0 +1,11 @@
+# Package-manager caches and installed dependencies
+.pnpm-store/
+node_modules/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
