@@ -3,6 +3,7 @@ import IORedis from 'ioredis'
 const redis = process.env.REDIS_URL
   ? new IORedis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
+      enableReadyCheck: false,
     })
   : new IORedis({
       host: process.env.REDIS_HOST || '127.0.0.1',

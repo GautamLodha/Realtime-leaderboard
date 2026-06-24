@@ -1,4 +1,5 @@
 import express from 'express'
+import { startQuizWorker } from './workers/quiz.worker'
 import cors from 'cors'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
@@ -38,6 +39,7 @@ const io = new Server(httpServer, {
 
 // init all socket events
 initSocket(io)
+startQuizWorker(io)
 
 const PORT = process.env.PORT || 3000
 httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`))
