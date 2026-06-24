@@ -121,6 +121,10 @@ export default function App() {
     const socket = io(BACKEND_URL, { auth: { token } })
     socketRef.current = socket
     socket.on('connect', () => socket.emit('join_room', { roomId }))
+    socket.on('connect_error', (connectionError) => {
+      setError(`Unable to connect to the quiz room: ${connectionError.message}`)
+      socket.disconnect()
+    })
     socket.on('joined', (payload: PlayerRoom) => {
       setPlayerRoom(payload); setPlayerIndex(0); setPlayerAnswer(''); setPlayerResult(''); questionStartedAt.current = Date.now()
     })
