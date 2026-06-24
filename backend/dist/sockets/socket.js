@@ -35,6 +35,16 @@ const initSocket = (io) => {
                 return socket.emit('error', { message: 'Room not found' });
             if (quiz.status === 'draft')
                 return socket.emit('error', { message: 'Quiz has not been scheduled yet' });
+            // Delayed jobs can be missed while a hosted worker is asleep or restarting.
+            // Reconcile the quiz state when a participant enters the room so its schedule
+            // remains correct even without a continuously running worker.
+            if (quiz.status === 'scheduled' && quiz.startTime && quiz.startTime.getTime() <= Date.now()) {
+                const hasEnded = quiz.startTime.getTime() + quiz.duration * 60 * 1000 <= Date.now();
+                quiz.status = hasEnded ? 'ended' : 'active';
+                await db_1.prisma.quiz.update({ where: { id: quiz.id }, data: { status: quiz.status } });
+                if (!hasEnded)
+                    io.to(roomId).emit('quiz_start', { quizId: quiz.id, roomId });
+            }
             // add user to this socket room
             socket.join(roomId);
             socket.data.roomId = roomId;
