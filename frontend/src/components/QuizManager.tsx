@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toLocalDateTimeInput } from '../utils/dateTime'
+import { BACKEND_URL } from '../config'
 
 type Quiz = { id: number; title: string; roomId: string; duration: number; status: string; startTime: string | null }
 type Question = { text: string; options: string[]; answer: string }
@@ -13,7 +14,7 @@ export default function QuizManager({ quiz, token, initialSchedule, onClose, onC
   const [busy, setBusy] = useState(false)
   const endTime = schedule ? new Date(new Date(schedule).getTime() + quiz.duration * 60_000) : null
   const api = async (path: string, options: RequestInit = {}) => {
-    const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...options.headers } })
+    const response = await fetch(`${BACKEND_URL}${path}`, { ...options, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...options.headers } })
     const data = await response.json().catch(() => ({}))
     if (!response.ok) throw new Error(data.error || 'Request failed')
     return data

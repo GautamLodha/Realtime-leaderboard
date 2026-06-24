@@ -10,12 +10,12 @@ import './workers/quiz.worker'
 
 dotenv.config()
 
+const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:3000'
 const app = express()
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: frontendOrigin,
   credentials: true,
 }))
-app.use(express.json())
 app.use(express.json())
 
 app.use('/auth', authRoutes)
@@ -33,7 +33,7 @@ app.use((error: Error & { code?: string }, _req: express.Request, res: express.R
 // create http server and attach socket.io to it
 const httpServer = createServer(app)
 const io = new Server(httpServer, {
-  cors: { origin: '*' }
+  cors: { origin: frontendOrigin, credentials: true }
 })
 
 // init all socket events
