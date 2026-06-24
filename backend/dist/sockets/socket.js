@@ -52,9 +52,6 @@ const initSocket = (io) => {
                 select: { questionId: true, score: true, isCorrect: true }
             });
             const leaderboard = await (0, leaderboard_1.getLeaderboard)(roomId);
-            // store their question order in Redis so we can grade correctly
-            await redis_1.default.set(`order:${userId}:${roomId}`, JSON.stringify(shuffled.map(q => q.id)), 'EX', 60 * 60 * 3 // expire after 3 hours
-            );
             // send shuffled questions + quiz meta to this user only
             socket.emit('joined', {
                 quiz: {
@@ -69,6 +66,8 @@ const initSocket = (io) => {
                 leaderboard,
                 myScore: answers.reduce((total, answer) => total + answer.score, 0)
             });
+            // This cache improves grading/proctoring but must not prevent a player from entering a room.
+            void redis_1.default.set(`order:${userId}:${roomId}`, JSON.stringify(shuffled.map(q => q.id)), 'EX', 60 * 60 * 3).catch(error => console.error('Could not cache question order:', error));
             console.log(`User ${userId} joined room ${roomId}`);
         });
         // ─── EVENT 2: SUBMIT ANSWER ───────────────────────────
