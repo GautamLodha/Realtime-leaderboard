@@ -8,6 +8,7 @@ const ioredis_1 = __importDefault(require("ioredis"));
 const redis = process.env.REDIS_URL
     ? new ioredis_1.default(process.env.REDIS_URL, {
         maxRetriesPerRequest: null,
+        enableReadyCheck: false,
     })
     : new ioredis_1.default({
         host: process.env.REDIS_HOST || '127.0.0.1',

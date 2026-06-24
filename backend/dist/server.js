@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.io = void 0;
 const express_1 = __importDefault(require("express"));
+const quiz_worker_1 = require("./workers/quiz.worker");
 const cors_1 = __importDefault(require("cors"));
 const http_1 = require("http");
 const socket_io_1 = require("socket.io");
@@ -38,5 +39,6 @@ const io = new socket_io_1.Server(httpServer, {
 exports.io = io;
 // init all socket events
 (0, socket_1.initSocket)(io);
+(0, quiz_worker_1.startQuizWorker)(io);
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));

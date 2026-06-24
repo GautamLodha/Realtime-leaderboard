@@ -108,8 +108,6 @@ const initSocket = (io) => {
             await db_1.prisma.answer.create({
                 data: { userId, quizId, questionId, answer, isCorrect, score, timeTaken }
             });
-            // update leaderboard in Redis sorted set
-            await redis_1.default.zincrby(`leaderboard:${roomId}`, score, String(userId));
             // send result back to this user only
             socket.emit('answer_result', {
                 questionId,
@@ -121,6 +119,10 @@ const initSocket = (io) => {
                     _sum: { score: true }
                 }).then(result => result._sum.score ?? 0)
             });
+            // Redis is a cache for the live leaderboard. Do not delay the answer result
+            // (and the client's Next button) if the cache is temporarily unavailable.
+            void redis_1.default.zincrby(`leaderboard:${roomId}`, score, String(userId))
+                .catch(error => console.error('Could not update Redis leaderboard:', error));
             // fetch updated leaderboard top 10
             const leaderboard = await (0, leaderboard_1.getLeaderboard)(roomId);
             // broadcast new leaderboard to everyone in room
