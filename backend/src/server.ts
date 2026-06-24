@@ -1,29 +1,39 @@
-import express from 'express';
-import { createServer } from 'http';
-import dotenv from 'dotenv';
-import authRoutes from './routes/authRoutes';
-import quizRoutes from './routes/quizRoutes';
-import { initSocket } from './config/socket';
-import { setupQuizSockets } from './sockets/quizSocket';
-import { initQuizWorker } from './services/quizStateService';
+import express from 'express'
+import { createServer } from 'http'
+import { Server } from 'socket.io'
+import dotenv from 'dotenv'
+import authRoutes from './routes/authRoutes'
+import quizRoutes from './routes/quizRoutes'
+import { initSocket } from './sockets/socket'
+import './workers/quiz.worker'
 
-dotenv.config();
+dotenv.config()
 
-const app = express();
-app.use(express.json());
+const app = express()
+app.use(express.json())
 
-const httpServer = createServer(app);
+app.use('/auth', authRoutes)
+app.use('/quiz', quizRoutes)
 
-// Initialize Sockets & Workers cleanly
-const io = initSocket(httpServer);
-setupQuizSockets(io);
-initQuizWorker(); // Boots up the BullMQ consumer list
+app.get('/health', (_, res) => res.json({ status: 'ok' }))
 
-// Mount routes
-app.use('/api/auth', authRoutes);
-app.use('/api/quizzes', quizRoutes);
+app.use((error: Error & { code?: string }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error(error)
+  if (error.code === 'P1001')
+    return res.status(503).json({ error: 'Database is temporarily unreachable. Please try again shortly.' })
+  return res.status(500).json({ error: 'Unexpected server error' })
+})
 
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => {
-  console.log(`🔥 Realtime Engine running smoothly on port ${PORT}`);
-});
+// create http server and attach socket.io to it
+const httpServer = createServer(app)
+const io = new Server(httpServer, {
+  cors: { origin: '*' }
+})
+
+// init all socket events
+initSocket(io)
+
+const PORT = process.env.PORT || 3000
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+
+export { io }   // export so worker can use it

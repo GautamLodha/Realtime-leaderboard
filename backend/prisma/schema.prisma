@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -12,63 +12,71 @@ datasource db {
 
 
 
-
-enum UserRole {
-  USER
-  ADMIN
-}
-
-enum QuizStatus {
-  WAITING
-  ACTIVE
-  FINISHED
-}
-
-
-
 model User {
-  id           Int          @id @default(autoincrement())
-  username     String       @unique @db.VarChar(50)
-  email        String       @unique @db.VarChar(100)
-  password     String       // hashed via bcryptjs
-  role         UserRole     @default(USER)
-  createdAt    DateTime     @default(now())
+  id           Int              @id @default(autoincrement())
+  name         String
+  email        String           @unique
+  password     String
+  createdAt    DateTime         @default(now())
 
-  answers      UserAnswer[]
+  quizzesCreated  Quiz[]           @relation("QuizCreator")
+  participations  QuizParticipant[]
+  answers         Answer[]
 }
 
-model QuizQuestion {
-  id            Int          @id @default(autoincrement())
-  questionText  String
-  optionA       String
-  optionB       String
-  optionC       String
-  optionD       String
-  correctOption String       @db.VarChar(1)  // "A" | "B" | "C" | "D"
-  orderNumber   Int          @unique
+model Quiz {
+  id          Int              @id @default(autoincrement())
+  title       String
+  roomId      String           @unique
+  creatorId   Int
+  startTime   DateTime?
+  duration    Int
+  status      String           @default("scheduled")
+  createdAt   DateTime         @default(now())
 
-  answers       UserAnswer[]
+  creator     User             @relation("QuizCreator", fields: [creatorId], references: [id])
+  questions   Question[]
+  participants QuizParticipant[]
+  answers     Answer[]
 }
 
-model QuizSession {
-  id          Int        @id @default(autoincrement())
-  status      QuizStatus @default(WAITING)
-  startedAt   DateTime?
-  endedAt     DateTime?
-  createdAt   DateTime   @default(now())
+model Question {
+  id        Int      @id @default(autoincrement())
+  quizId    Int
+  text      String
+  options   Json
+  answer    String
+  position  Int
+  createdAt DateTime @default(now())
+
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers   Answer[]
 }
 
-model UserAnswer {
-  id             Int          @id @default(autoincrement())
-  userId         Int
-  questionId     Int
-  selectedOption String       @db.VarChar(1)  // "A" | "B" | "C" | "D"
-  isCorrect      Boolean
-  score          Int          @default(0)
-  answeredAt     DateTime     @default(now())
+model QuizParticipant {
+  id        Int      @id @default(autoincrement())
+  quizId    Int
+  userId    Int
+  joinedAt  DateTime @default(now())
 
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question       QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
-  @@unique([userId, questionId]) // one answer per user per question
+  @@unique([quizId, userId])
+}
+
+model Answer {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  quizId     Int
+  questionId Int
+  answer     String
+  isCorrect  Boolean
+  score      Int
+  timeTaken  Int
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+  quiz       Quiz     @relation(fields: [quizId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id])
 }

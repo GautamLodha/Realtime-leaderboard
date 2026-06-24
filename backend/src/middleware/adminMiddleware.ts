@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-
 export const adminOnly = (
   req: Request,
   res: Response,

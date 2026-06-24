@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "outDir": "dist",
-    "rootDir": ".",
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "./src",
+    "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true
+    "skipLibCheck": true
   },
-  "include": ["src/**/*", "src/routes/**/*", "src/controllers/**/*", "src/sockets/**/*", "src/services/**/*", "src/middleware/**/*"],
-  "exclude": ["node_modules", "dist", "generated"]
+  "include": [
+    "src/**/*.ts"
+  ]
 }

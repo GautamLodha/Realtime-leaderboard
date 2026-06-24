@@ -1,9 +1,11 @@
-import { Router } from 'express';
-import { register, login } from '../controllers/authController';
+import { Router } from 'express'
+import { login, register } from '../controllers/authController'
+import { asyncHandler } from '../middleware/asyncHandler'
 
-const router = Router();
 
-router.post('/register', register);
-router.post('/login', login);
+const router = Router()
 
-export default router;
+router.post('/register', asyncHandler(register))
+router.post('/login', asyncHandler(login))
+
+export default router

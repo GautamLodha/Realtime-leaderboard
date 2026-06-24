@@ -1,21 +1,34 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express'
+import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
-
-export interface AuthRequest extends Request {
-  user?: { id: number; role: string };
+interface JwtPayload {
+  userId: number
+  email: string
+  role?: string
 }
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload
+    }
+  }
+}
 
-  if (!token) return res.status(401).json({ error: 'Access token required' });
+export const protect = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
-    req.user = user as { id: number; role: string };
-    next();
-  });
-};
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' })
+  }
+
+  const token = authHeader.split(' ')[1]
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload
+    req.user = decoded
+    next()
+  } catch {
+    return res.status(401).json({ error: 'Invalid or expired token' })
+  }
+}

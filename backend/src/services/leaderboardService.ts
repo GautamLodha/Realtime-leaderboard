@@ -1,4 +1,4 @@
-import { redisConnection } from '../config/redis';
+import redis from '../config/redis';
 import { prisma } from '../config/db';
 import { getIO } from '../config/socket';
 
@@ -6,37 +6,30 @@ export class LeaderboardService {
 
   public static async submitAnswer(userId: number, sessionId: number, questionId: number, selectedOption: string) {
 
-    const question = await prisma.quizQuestion.findUnique({
+    const question = await prisma.question.findUnique({
       where: { id: questionId },
     });
 
     if (!question) throw new Error('Question not found');
 
-    const isCorrect = question.correctOption === selectedOption;
+    const isCorrect = question.answer === selectedOption;
     const pointsToAdd = isCorrect ? 10 : 0;
-    await prisma.userAnswer.upsert({
-      where: {
-        userId_questionId: { userId, questionId },
-      },
-      update: {
-        selectedOption,
-        isCorrect,
-        score: pointsToAdd,
-        answeredAt: new Date(),
-      },
-      create: {
-        userId,
-        questionId,
-        selectedOption,
-        isCorrect,
-        score: pointsToAdd,
-      },
-    });
+    const existingAnswer = await prisma.answer.findFirst({ where: { userId, quizId: sessionId, questionId } });
+    if (existingAnswer) {
+      await prisma.answer.update({
+        where: { id: existingAnswer.id },
+        data: { answer: selectedOption, isCorrect, score: pointsToAdd },
+      });
+    } else {
+      await prisma.answer.create({
+        data: { userId, quizId: sessionId, questionId, answer: selectedOption, isCorrect, score: pointsToAdd, timeTaken: 0 },
+      });
+    }
 
     // 3. Update the leaderboard in Redis Sorted Set
     // Format: zincrby("leaderboard:session_ID", score, username_or_id)
     const redisKey = `leaderboard:session_${sessionId}`;
-    await redisConnection.zincrby(redisKey, pointsToAdd, userId.toString());
+    await redis.zincrby(redisKey, pointsToAdd, userId.toString());
 
     // 4. Trigger the real-time broadcast to the contest room
     await this.broadcastLeaderboard(sessionId);
@@ -51,7 +44,7 @@ export class LeaderboardService {
     const redisKey = `leaderboard:session_${sessionId}`;
     
     // ZREVRANGE fetches elements descending (highest score first) with their scores
-    const topPlayersRaw = await redisConnection.zrevrange(redisKey, 0, 9, 'WITHSCORES');
+    const topPlayersRaw = await redis.zrevrange(redisKey, 0, 9, 'WITHSCORES');
     
     const leaderboard = [];
     for (let i = 0; i < topPlayersRaw.length; i += 2) {
@@ -61,12 +54,12 @@ export class LeaderboardService {
       // Fetch user profile from DB to get the actual username instead of raw ID string
       const user = await prisma.user.findUnique({
         where: { id: parseInt(userIdStr, 10) },
-        select: { username: true }
+        select: { name: true }
       });
 
       leaderboard.push({
         rank: (i / 2) + 1,
-        username: user?.username || `User_${userIdStr}`,
+        username: user?.name || `User_${userIdStr}`,
         score: parseInt(scoreStr, 10),
       });
     }

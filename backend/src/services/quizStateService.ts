@@ -1,10 +1,10 @@
 import { Queue, Worker, Job } from 'bullmq';
-import { redisConnection } from '../config/redis';
+import redis from '../config/redis';
 import { prisma } from '../config/db';
 import { getIO } from '../config/socket';
 
 // 1. Initialize the Queue
-export const quizQueue = new Queue('quizSessionQueue', { connection: redisConnection });
+export const quizQueue = new Queue('quizSessionQueue', { connection: redis as any });
 
 // 2. Define the Worker to process the scheduled jobs
 export const initQuizWorker = () => {
@@ -16,31 +16,31 @@ export const initQuizWorker = () => {
 
       if (action === 'START') {
         // A. Move status to ACTIVE in PostgreSQL
-        await prisma.quizSession.update({
+        await prisma.quiz.update({
           where: { id: sessionId },
-          data: { status: 'ACTIVE', startedAt: new Date() },
+          data: { status: 'active' },
         });
 
         console.log(`🚀 Quiz Session ${sessionId} is now LIVE!`);
 
         // B. Emit real-time event to all clients waiting in this quiz room
-        io.to(`quiz_${sessionId}`).emit('quiz_state_change', { status: 'ACTIVE' });
+        io.to(`quiz_${sessionId}`).emit('quiz_state_change', { status: 'active' });
       } 
       
       else if (action === 'END') {
         // A. Move status to FINISHED in PostgreSQL
-        await prisma.quizSession.update({
+        await prisma.quiz.update({
           where: { id: sessionId },
-          data: { status: 'FINISHED', endedAt: new Date() },
+          data: { status: 'ended' },
         });
 
         console.log(`🏁 Quiz Session ${sessionId} has ENDED!`);
 
         // B. Emit real-time event to stop the quiz for everyone
-        io.to(`quiz_${sessionId}`).emit('quiz_state_change', { status: 'FINISHED' });
+        io.to(`quiz_${sessionId}`).emit('quiz_state_change', { status: 'ended' });
       }
     },
-    { connection: redisConnection }
+    { connection: redis as any }
   );
 
   worker.on('failed', (job, err) => {
