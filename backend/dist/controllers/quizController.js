@@ -133,8 +133,9 @@ const scheduleQuiz = async (req, res) => {
         where: { id: quizId },
         data: { startTime: start, status: 'scheduled' }
     });
-    // push delayed job to Bull queue
-    await quiz_queue_1.quizQueue.add('start_quiz', { roomId: quiz.roomId, quizId }, { delay });
+    // Queueing is best-effort. The room-join status reconciliation still starts a
+    // quiz at its scheduled time if Redis/BullMQ is temporarily unavailable.
+    void quiz_queue_1.quizQueue.add('start_quiz', { roomId: quiz.roomId, quizId }, { delay }).catch(error => console.error(`Could not queue quiz ${quizId}:`, error));
     res.json({ message: 'Quiz scheduled', startTime: start, roomId: quiz.roomId });
 };
 exports.scheduleQuiz = scheduleQuiz;
